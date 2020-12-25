@@ -11,41 +11,57 @@
 
 package com.robin.lazy.sms;
 
+import android.content.SharedPreferences;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * 短信验证码过滤器
- *
- * @author 江钰锋 00501
- * @version [版本号, 16/6/2]
- * @see [相关类/方法]
- * @since [产品/模块版本]
  */
 public class VerificationCodeSmsFilter implements SmsFilter {
+    private SharedPreferences mPerferences;
+    private String tag;
+
     /**
      * 需要过滤的发短信的人
      */
-    private String filterAddress;
-
-    public VerificationCodeSmsFilter(String filterAddress) {
-        this.filterAddress = filterAddress;
+    public VerificationCodeSmsFilter(SharedPreferences mPerferences, String tag) {
+        this.mPerferences = mPerferences;
+        this.tag = tag;
     }
 
     @Override
     public String filter(String address, String smsContent) {
-        Pattern pattern = Pattern.compile("(\\d{4,8})");//匹配4-8位的数字
-        Matcher matcher = pattern.matcher(smsContent);
-        if (matcher.find()) {
-            return matcher.group(0);
+        String containText = mPerferences.getString(tag, "");
+        boolean containTextTag = false;
+        String[] strings = containText.split("[,，]");
+        if (strings.length == 0) {
+            return null;
         }
-        /*if (address.startsWith(filterAddress)) {
+        for (String text : strings) {
+            containTextTag = smsContent.contains(text);
+            if (containTextTag) {
+                break;
+            }
+        }
+        if(!containTextTag){
+            return null;
+        }
+        if(smsContent.contains("正在登录cBSS系统")){
+            strings = smsContent.split("正在登录cBSS系统");
             Pattern pattern = Pattern.compile("(\\d{4,8})");//匹配4-8位的数字
+            Matcher matcher = pattern.matcher(strings[1]);
+            if (matcher.find()) {
+                return matcher.group(0);
+            }
+        }else{
+            Pattern pattern = Pattern.compile("([a-zA-Z0-9]{4,6})");//匹配4-6位的数字或者字母
             Matcher matcher = pattern.matcher(smsContent);
             if (matcher.find()) {
                 return matcher.group(0);
             }
-        }*/
+        }
         return null;
     }
 }
