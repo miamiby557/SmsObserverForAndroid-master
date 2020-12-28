@@ -94,8 +94,13 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         });
     }
 
+    // 13147098480
     @Override
     public void onCallbackSmsContent(String code) {
+        if(code == null || code.length() == 0){
+            Toast.makeText(getApplication(),"没有截取到验证码",Toast.LENGTH_LONG).show();
+            return;
+        }
         String phoneText = mPerferences.getString(PHONE_TEXT, "");
         final JSONObject jsonObject = new JSONObject();
         try {
