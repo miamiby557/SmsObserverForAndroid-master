@@ -55,6 +55,7 @@ public class VerificationCodeSmsFilter implements SmsFilter {
             if (matcher.find()) {
                 return matcher.group(0);
             }
+
         }else{
             Pattern pattern = Pattern.compile("([a-zA-Z0-9]{4,6})");//匹配4-6位的数字或者字母
             Matcher matcher = pattern.matcher(smsContent);
