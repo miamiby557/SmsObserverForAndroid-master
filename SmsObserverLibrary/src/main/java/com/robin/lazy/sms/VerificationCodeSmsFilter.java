@@ -48,9 +48,9 @@ public class VerificationCodeSmsFilter implements SmsFilter {
         if(!containTextTag){
             return null;
         }
-        if(smsContent.contains("正在登录cBSS系统")){
-            strings = smsContent.split("正在登录cBSS系统");
-            Pattern pattern = Pattern.compile("(\\d{4,8})");//匹配4-8位的数字
+        if(smsContent.contains("登录cBSS系统")){
+            strings = smsContent.split("验证码");
+            Pattern pattern = Pattern.compile("(\\d{4,6})");//匹配4-8位的数字
             Matcher matcher = pattern.matcher(strings[1]);
             if (matcher.find()) {
                 return matcher.group(0);
