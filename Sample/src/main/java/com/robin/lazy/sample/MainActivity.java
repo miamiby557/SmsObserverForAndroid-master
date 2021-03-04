@@ -2,6 +2,7 @@ package com.robin.lazy.sample;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -92,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
                 Toast.makeText(getApplication(),"保存成功",Toast.LENGTH_LONG).show();
             }
         });
+        // 常驻前台
+        startService(new Intent(this , UnKillService.class));
     }
 
     // 13147098480
