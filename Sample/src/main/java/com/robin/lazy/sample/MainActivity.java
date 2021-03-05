@@ -4,8 +4,10 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
@@ -79,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
 //        serverPref.setText(serverText);
         // 绑定事件
         confirmPref.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD)
             @SuppressLint("ShowToast")
             @Override
             public void onClick(View view) {
