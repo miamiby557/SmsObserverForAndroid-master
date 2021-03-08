@@ -53,13 +53,13 @@ public class VerificationCodeSmsFilter implements SmsFilter {
             Pattern pattern = Pattern.compile("(\\d{4,6})");//匹配4-8位的数字
             Matcher matcher = pattern.matcher(strings[1]);
             if (matcher.find()) {
-                return matcher.group(0);
+                return matcher.group();
             }
         }else{
-            Pattern pattern = Pattern.compile("([a-zA-Z0-9]{4,6})");//匹配4-6位的数字或者字母
+            Pattern pattern = Pattern.compile("[a-zA-Z0-9]{4,6}");//匹配4-6位的数字或者字母
             Matcher matcher = pattern.matcher(smsContent);
             if (matcher.find()) {
-                return matcher.group(0);
+                return matcher.group();
             }
         }
         return null;
