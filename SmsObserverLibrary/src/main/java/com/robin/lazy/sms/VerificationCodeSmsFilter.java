@@ -45,9 +45,20 @@ public class VerificationCodeSmsFilter implements SmsFilter {
                 break;
             }
         }
-        if(!containTextTag){
+        if (!containTextTag) {
             return null;
         }
+        // 深圳联通
+        smsContent = smsContent.replace("SZCW0018", "");
+        if (smsContent.contains("验证码")) {
+            smsContent = smsContent.split("验证码")[1];
+        }
+        Pattern pattern = Pattern.compile("(\\d{4,6})");//匹配4-8位的数字
+        Matcher matcher = pattern.matcher(smsContent);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        /*
         if(smsContent.contains("登录cBSS系统")){
             strings = smsContent.split("验证码");
             Pattern pattern = Pattern.compile("(\\d{4,6})");//匹配4-8位的数字
@@ -61,7 +72,7 @@ public class VerificationCodeSmsFilter implements SmsFilter {
             if (matcher.find()) {
                 return matcher.group();
             }
-        }
+        }*/
         return null;
     }
 }

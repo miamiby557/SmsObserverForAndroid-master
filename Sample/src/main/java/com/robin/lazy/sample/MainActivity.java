@@ -2,18 +2,21 @@ package com.robin.lazy.sample;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.karumi.dexter.Dexter;
@@ -46,19 +49,22 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
     private Button confirmPref;
     private EditText containTextPref;
     private EditText phonePref;
-//    private EditText serverPref;
+    //    private EditText serverPref;
     SharedPreferences mPerferences;
+    private static final int NO_1 = 0x1;
+    NotificationManager manager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mPerferences = this.getSharedPreferences("SMS",MODE_PRIVATE);
+        mPerferences = this.getSharedPreferences("SMS", MODE_PRIVATE);
         setContentView(R.layout.activity_main);
         confirmPref = this.findViewById(R.id.confirm);
         containTextPref = this.findViewById(R.id.containText);
         phonePref = this.findViewById(R.id.phone);
+        manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 //        serverPref = this.findViewById(R.id.server);
-        smsObserver = new SmsObserver(this, this, new VerificationCodeSmsFilter(mPerferences,CONTAIN_TEXT));
+        smsObserver = new SmsObserver(this, this, new VerificationCodeSmsFilter(mPerferences, CONTAIN_TEXT));
         smsObserver.registerSMSObserver();
         Dexter.withActivity(this)
                 .withPermission(Manifest.permission.READ_SMS)
@@ -93,18 +99,49 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
                 editor.putString(PHONE_TEXT, phoneText);
 //                editor.putString(SERVER_TEXT, serverText);
                 editor.apply();
-                Toast.makeText(getApplication(),"保存成功",Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplication(), "保存成功", Toast.LENGTH_LONG).show();
+                /*String channelId = "notification_simple";
+                if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O) {
+                    NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                    NotificationChannel channel = new NotificationChannel(channelId, "simple", NotificationManager.IMPORTANCE_DEFAULT);
+                    manager.createNotificationChannel(channel);
+
+                    Notification notification = new NotificationCompat.Builder(MainActivity.this, channelId)
+                            .setContentTitle("This is content title")
+                            .setContentText("This is content text")
+                            .setWhen(System.currentTimeMillis())
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+                            .build();
+                    manager.notify(1, notification);
+                    Toast.makeText(MainActivity.this,"lest 26",Toast.LENGTH_LONG).show();
+                }
+                else{
+                    NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                    Notification notification = new NotificationCompat.Builder(MainActivity.this, channelId)
+                            .setContentTitle("This is content title")
+                            .setContentText("This is content text")
+                            .setWhen(System.currentTimeMillis())
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+                            .build();
+                    manager.notify(1, notification);
+                    Toast.makeText(MainActivity.this,"lest 26",Toast.LENGTH_LONG).show();
+                }*/
             }
         });
+
         // 常驻前台
-        startService(new Intent(this , UnKillService.class));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(new Intent(this, UnKillService.class));
+        }
     }
 
     // 13147098480
     @Override
     public void onCallbackSmsContent(String code) {
-        if(code == null || code.length() == 0){
-            Toast.makeText(getApplication(),"没有截取到验证码",Toast.LENGTH_LONG).show();
+        if (code == null || code.length() == 0) {
+            Toast.makeText(getApplication(), "没有截取到验证码", Toast.LENGTH_LONG).show();
             return;
         }
         String phoneText = mPerferences.getString(PHONE_TEXT, "");
@@ -114,10 +151,10 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
             jsonObject.put("code", code);
         } catch (JSONException e) {
             e.printStackTrace();
-            Toast.makeText(getApplication(),"生成JSON数据失败",Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplication(), "生成JSON数据失败", Toast.LENGTH_LONG).show();
             return;
         }
-        new Thread(new Runnable(){
+        new Thread(new Runnable() {
             @Override
             public void run() {
                 sendJsonPost(jsonObject.toString());
@@ -156,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(getApplicationContext(),"发送验证码失败",Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "发送验证码失败", Toast.LENGTH_LONG).show();
         } finally {
             if (reader != null) {
                 try {
