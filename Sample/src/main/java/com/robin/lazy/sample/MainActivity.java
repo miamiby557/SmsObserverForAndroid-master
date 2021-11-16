@@ -63,7 +63,6 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         containTextPref = this.findViewById(R.id.containText);
         phonePref = this.findViewById(R.id.phone);
         manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-//        serverPref = this.findViewById(R.id.server);
         smsObserver = new SmsObserver(this, this, new VerificationCodeSmsFilter(mPerferences, CONTAIN_TEXT));
         smsObserver.registerSMSObserver();
         Dexter.withActivity(this)
@@ -81,10 +80,8 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         // 初始化页面
         String containText = mPerferences.getString(CONTAIN_TEXT, "");
         String phoneText = mPerferences.getString(PHONE_TEXT, "");
-        String serverText = mPerferences.getString(SERVER_TEXT, "");
         containTextPref.setText(containText);
         phonePref.setText(phoneText);
-//        serverPref.setText(serverText);
         // 绑定事件
         confirmPref.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD)
@@ -93,41 +90,11 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
             public void onClick(View view) {
                 String containText = containTextPref.getText().toString().trim();
                 String phoneText = phonePref.getText().toString().trim();
-//                String serverText = serverPref.getText().toString().trim();
                 SharedPreferences.Editor editor = mPerferences.edit();
                 editor.putString(CONTAIN_TEXT, containText);
                 editor.putString(PHONE_TEXT, phoneText);
-//                editor.putString(SERVER_TEXT, serverText);
                 editor.apply();
                 Toast.makeText(getApplication(), "保存成功", Toast.LENGTH_LONG).show();
-                /*String channelId = "notification_simple";
-                if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O) {
-                    NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-                    NotificationChannel channel = new NotificationChannel(channelId, "simple", NotificationManager.IMPORTANCE_DEFAULT);
-                    manager.createNotificationChannel(channel);
-
-                    Notification notification = new NotificationCompat.Builder(MainActivity.this, channelId)
-                            .setContentTitle("This is content title")
-                            .setContentText("This is content text")
-                            .setWhen(System.currentTimeMillis())
-                            .setSmallIcon(R.mipmap.ic_launcher)
-                            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
-                            .build();
-                    manager.notify(1, notification);
-                    Toast.makeText(MainActivity.this,"lest 26",Toast.LENGTH_LONG).show();
-                }
-                else{
-                    NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-                    Notification notification = new NotificationCompat.Builder(MainActivity.this, channelId)
-                            .setContentTitle("This is content title")
-                            .setContentText("This is content text")
-                            .setWhen(System.currentTimeMillis())
-                            .setSmallIcon(R.mipmap.ic_launcher)
-                            .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
-                            .build();
-                    manager.notify(1, notification);
-                    Toast.makeText(MainActivity.this,"lest 26",Toast.LENGTH_LONG).show();
-                }*/
             }
         });
 
