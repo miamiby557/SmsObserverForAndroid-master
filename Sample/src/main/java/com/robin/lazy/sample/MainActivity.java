@@ -38,6 +38,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements SmsResponseCallback {
 
@@ -53,6 +55,15 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
     SharedPreferences mPerferences;
     private static final int NO_1 = 0x1;
     NotificationManager manager;
+
+    Timer timer = new Timer();
+
+    static class MyTimerTask extends TimerTask {
+        public void run() {
+            // 发送心跳
+            HttpHelper.heartBreak();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +113,7 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(new Intent(this, UnKillService.class));
         }
+        timer.schedule(new MyTimerTask(), 0, 10000);
     }
 
     // 13147098480
@@ -147,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
             // 往服务器里面发送数据
             if (Json != null && !TextUtils.isEmpty(Json)) {
                 byte[] writebytes = Json.getBytes();
-                // 设置文件长度
+                // 设置文件长度w
                 conn.setRequestProperty("Content-Length", String.valueOf(writebytes.length));
                 OutputStream outWriteStream = conn.getOutputStream();
                 outWriteStream.write(Json.getBytes());
