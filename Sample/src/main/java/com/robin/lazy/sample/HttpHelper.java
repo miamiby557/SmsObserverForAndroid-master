@@ -21,7 +21,7 @@ public class HttpHelper {
     public static void heartBreak() {
         BufferedReader reader = null;
         try {
-            String apiUrl = "http://47.103.93.177:8000/monitor/app/updatemonitorstatus";
+            String apiUrl = "http://47.103.93.177:8000/monitor/updatemonitorstatus";
             URL url = new URL(apiUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
