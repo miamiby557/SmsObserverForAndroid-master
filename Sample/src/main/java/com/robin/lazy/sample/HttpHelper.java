@@ -18,7 +18,7 @@ public class HttpHelper {
     @SuppressLint("SimpleDateFormat")
     private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
 
-    public static void heartBreak() {
+    public static void heartBreak(String ip) {
         BufferedReader reader = null;
         try {
             String apiUrl = "http://47.103.93.177:8000/monitor/updatemonitorstatus";
@@ -37,7 +37,7 @@ public class HttpHelper {
             // 设置文件长度
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("chatid", "liantong-app-chat");
-            jsonObject.put("ip", "127.0.0.1");
+            jsonObject.put("ip", ip);
             jsonObject.put("times", format.format(new Date()));
             jsonObject.put("chattype", 3);
             jsonObject.put("nickname", "联通验证码APP");
