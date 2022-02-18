@@ -83,7 +83,7 @@ public class SmsObserver extends ContentObserver {
         if (uri.toString().equals("content://sms/raw")) {
             return;
         }
-        Uri inboxUri = Uri.parse("content://sms/inbox");//收件箱
+        Uri inboxUri = Uri.parse("content://sms/");//收件箱
         try {
             Cursor c = mContext.getContentResolver().query(inboxUri, null, null,
                     null, "date desc");

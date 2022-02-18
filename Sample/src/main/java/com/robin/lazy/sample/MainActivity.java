@@ -8,9 +8,11 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -72,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
     static class MyTimerTask extends TimerTask {
         public void run() {
             // 发送心跳
-            HttpHelper.heartBreak(ip);
+//            HttpHelper.heartBreak(ip);
         }
     }
 
@@ -126,6 +128,32 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         }
         ip = getIPAddress();
         timer.schedule(new MyTimerTask(), 0, 10000);
+
+//        getSMS();
+    }
+
+    public void getSMS() {
+        final String SMS_URI_INBOX = "content://sms/";
+        Uri uri = Uri.parse(SMS_URI_INBOX);
+        String[] projection = new String[]{"_id", "address", "person", "body", "date", "type",};
+        Cursor cur = getContentResolver().query(uri, projection, null, null, "date desc");
+//        Cursor cur = getContentResolver().query(uri, projection, "address = ?", new String[]{"106906168396"}, "date desc");
+        StringBuilder smsBuilder = new StringBuilder();
+        if (cur != null) {
+            while (cur.moveToNext()) {
+                int index_Address = cur.getColumnIndex("address");
+                int index_Person = cur.getColumnIndex("person");
+                int index_Body = cur.getColumnIndex("body");
+                int index_Date = cur.getColumnIndex("date");
+                int index_Type = cur.getColumnIndex("type");
+                String strAddress = cur.getString(index_Address);
+                int intPerson = cur.getInt(index_Person);
+                String strbody = cur.getString(index_Body);
+                long longDate = cur.getLong(index_Date);
+                int intType = cur.getInt(index_Type);
+                System.out.println("strAddress:" + strAddress + ",strbody:" + strbody);
+            }
+        }
     }
 
     // 13147098480
