@@ -5,9 +5,11 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
@@ -26,6 +28,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.hjq.permissions.OnPermissionCallback;
+import com.hjq.permissions.Permission;
+import com.hjq.permissions.XXPermissions;
+import com.hjq.toast.ToastUtils;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
@@ -50,6 +56,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -128,16 +135,51 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         }
         ip = getIPAddress();
         timer.schedule(new MyTimerTask(), 0, 10000);
+        //检查权限是否获取
+        PackageManager pm = getPackageManager();
+        CommonUtil.CheckPermission(pm, this);
+        XXPermissions.with(this)
+                // 申请单个权限
+                .permission(Permission.RECEIVE_SMS)
+                .permission(Permission.READ_SMS)
+                // 储存权限
+                .permission(Permission.Group.STORAGE)
+                // 申请通知栏权限
+                .permission(Permission.NOTIFICATION_SERVICE)
+                // 读取电话状态
+                .permission(Permission.READ_PHONE_STATE)
+                .request(new OnPermissionCallback() {
 
+                    @Override
+                    public void onGranted(List<String> permissions, boolean all) {
+                        if (all) {
+                            ToastUtils.show("获取读取短信权限成功");
+                        } else {
+                            ToastUtils.show("获取部分权限成功，但部分权限未正常授予");
+                        }
+                    }
+
+                    @Override
+                    public void onDenied(List<String> permissions, boolean never) {
+                        if (never) {
+                            ToastUtils.show("被永久拒绝授权，请手动获取读取短信权限");
+                            // 如果是被永久拒绝就跳转到应用权限系统设置页面
+                            XXPermissions.startPermissionActivity(getApplicationContext(), permissions);
+                        } else {
+                            ToastUtils.show("获取短信权限失败");
+                        }
+                    }
+                });
 //        getSMS();
     }
 
     public void getSMS() {
-        final String SMS_URI_INBOX = "content://sms/";
+        final String SMS_URI_INBOX = "content://sms/inbox";
         Uri uri = Uri.parse(SMS_URI_INBOX);
         String[] projection = new String[]{"_id", "address", "person", "body", "date", "type",};
-        Cursor cur = getContentResolver().query(uri, projection, null, null, "date desc");
-//        Cursor cur = getContentResolver().query(uri, projection, "address = ?", new String[]{"106906168396"}, "date desc");
+        ContentResolver cr = getContentResolver();
+        //创建查询
+        Cursor cur = cr.query(uri, projection, null, null, "date desc");
         StringBuilder smsBuilder = new StringBuilder();
         if (cur != null) {
             while (cur.moveToNext()) {
