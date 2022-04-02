@@ -1,17 +1,14 @@
 package com.robin.lazy.sample;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -19,11 +16,14 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
+import android.os.PowerManager;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -31,13 +31,6 @@ import android.widget.Toast;
 import com.hjq.permissions.OnPermissionCallback;
 import com.hjq.permissions.Permission;
 import com.hjq.permissions.XXPermissions;
-import com.hjq.toast.ToastUtils;
-import com.karumi.dexter.Dexter;
-import com.karumi.dexter.PermissionToken;
-import com.karumi.dexter.listener.PermissionDeniedResponse;
-import com.karumi.dexter.listener.PermissionGrantedResponse;
-import com.karumi.dexter.listener.PermissionRequest;
-import com.karumi.dexter.listener.single.PermissionListener;
 import com.robin.lazy.sms.SmsObserver;
 import com.robin.lazy.sms.SmsResponseCallback;
 import com.robin.lazy.sms.VerificationCodeSmsFilter;
@@ -85,6 +78,41 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         }
     }
 
+    private boolean isIgnoringBatteryOptimizations() {
+        boolean isIgnoring = false;
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        try {
+            if (powerManager != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    isIgnoring = powerManager.isIgnoringBatteryOptimizations(getPackageName());
+                }
+            }
+        } catch (Exception ignored) {
+
+        }
+        return isIgnoring;
+    }
+
+    @SuppressLint("BatteryLife")
+    public void requestIgnoreBatteryOptimizations() {
+        try {
+            Intent intent = null;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, 99);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void startRegisterSMSObserver() {
+        smsObserver = new SmsObserver(this, this, new VerificationCodeSmsFilter(mPerferences, CONTAIN_TEXT));
+        smsObserver.registerSMSObserver();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,40 +121,22 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         confirmPref = this.findViewById(R.id.confirm);
         containTextPref = this.findViewById(R.id.containText);
         phonePref = this.findViewById(R.id.phone);
-        manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        smsObserver = new SmsObserver(this, this, new VerificationCodeSmsFilter(mPerferences, CONTAIN_TEXT));
-        smsObserver.registerSMSObserver();
-        Dexter.withActivity(this)
-                .withPermission(Manifest.permission.READ_SMS)
-                .withListener(new PermissionListener() {
-                    @Override
-                    public void onPermissionGranted(PermissionGrantedResponse response) {/* ... */}
-
-                    @Override
-                    public void onPermissionDenied(PermissionDeniedResponse response) {/* ... */}
-
-                    @Override
-                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {/* ... */}
-                }).check();
+//        manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         // 初始化页面
         String containText = mPerferences.getString(CONTAIN_TEXT, "");
         String phoneText = mPerferences.getString(PHONE_TEXT, "");
         containTextPref.setText(containText);
         phonePref.setText(phoneText);
         // 绑定事件
-        confirmPref.setOnClickListener(new View.OnClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD)
-            @SuppressLint("ShowToast")
-            @Override
-            public void onClick(View view) {
-                String containText = containTextPref.getText().toString().trim();
-                String phoneText = phonePref.getText().toString().trim();
-                SharedPreferences.Editor editor = mPerferences.edit();
-                editor.putString(CONTAIN_TEXT, containText);
-                editor.putString(PHONE_TEXT, phoneText);
-                editor.apply();
-                Toast.makeText(getApplication(), "保存成功", Toast.LENGTH_LONG).show();
-            }
+        confirmPref.setOnClickListener(view -> {
+            String containText1 = containTextPref.getText().toString().trim();
+            String phoneText1 = phonePref.getText().toString().trim();
+            SharedPreferences.Editor editor = mPerferences.edit();
+            editor.putString(CONTAIN_TEXT, containText1);
+            editor.putString(PHONE_TEXT, phoneText1);
+            editor.apply();
+            Toast.makeText(getApplication(), "保存成功", Toast.LENGTH_LONG).show();
+            startRegisterSMSObserver();
         });
 
         // 常驻前台
@@ -137,46 +147,210 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         timer.schedule(new MyTimerTask(), 0, 10000);
         //检查权限是否获取
         PackageManager pm = getPackageManager();
+        try {
+            // 检查是否在白名单
+            boolean isIgnoringBattery = isIgnoringBatteryOptimizations();
+            if (!isIgnoringBattery) {
+                //  申请加入白名单
+                requestIgnoreBatteryOptimizations();
+            }
+        } catch (Exception ignored) {
+
+        }
         CommonUtil.CheckPermission(pm, this);
-        XXPermissions.with(this)
-                // 申请单个权限
-                .permission(Permission.RECEIVE_SMS)
-                .permission(Permission.READ_SMS)
-                // 储存权限
-                .permission(Permission.Group.STORAGE)
-                // 申请通知栏权限
-                .permission(Permission.NOTIFICATION_SERVICE)
-                .permission(Permission.READ_EXTERNAL_STORAGE)
-                .permission(Permission.WRITE_EXTERNAL_STORAGE)
-                // 读取电话状态
-                .permission(Permission.READ_PHONE_STATE)
-                .request(new OnPermissionCallback() {
+        boolean hasPermissions1 = XXPermissions.isGranted(this, Permission.RECEIVE_SMS, Permission.READ_SMS, Permission.NOTIFICATION_SERVICE, Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE);
+        boolean hasPermissions2 = XXPermissions.isGranted(this, Permission.Group.STORAGE);
+        if (!hasPermissions1 || !hasPermissions2) {
+            XXPermissions.with(this)
+                    // 申请单个权限
+                    .permission(Permission.RECEIVE_SMS)
+                    .permission(Permission.READ_SMS)
+                    // 储存权限
+                    .permission(Permission.Group.STORAGE)
+                    .permission(Permission.READ_EXTERNAL_STORAGE)
+                    .permission(Permission.WRITE_EXTERNAL_STORAGE)
+                    // 申请通知栏权限
+                    .permission(Permission.NOTIFICATION_SERVICE)
+                    .request(new OnPermissionCallback() {
 
-                    @Override
-                    public void onGranted(List<String> permissions, boolean all) {
-                        if (all) {
+                        @Override
+                        public void onGranted(List<String> permissions, boolean all) {
+                            if (all) {
 //                            ToastUtils.show("获取读取短信权限成功");
-                            Toast.makeText(getApplicationContext(), "获取读取短信权限成功", Toast.LENGTH_LONG).show();
-                        } else {
+                                Toast.makeText(getApplicationContext(), "获取读取短信权限成功", Toast.LENGTH_LONG).show();
+                                startRegisterSMSObserver();
+                            } else {
 //                            ToastUtils.show("获取部分权限成功，但部分权限未正常授予");
-                            Toast.makeText(getApplicationContext(), "获取部分权限成功，但部分权限未正常授予", Toast.LENGTH_LONG).show();
+                                Toast.makeText(getApplicationContext(), "获取部分权限成功，但部分权限未正常授予", Toast.LENGTH_LONG).show();
+                            }
                         }
-                    }
 
-                    @Override
-                    public void onDenied(List<String> permissions, boolean never) {
-                        if (never) {
+                        @Override
+                        public void onDenied(List<String> permissions, boolean never) {
+                            if (never) {
 //                            ToastUtils.show("被永久拒绝授权，请手动获取读取短信权限");
-                            // 如果是被永久拒绝就跳转到应用权限系统设置页面
-                            Toast.makeText(getApplicationContext(), "被永久拒绝授权，请手动获取读取短信权限", Toast.LENGTH_LONG).show();
-                            XXPermissions.startPermissionActivity(getApplicationContext(), permissions);
-                        } else {
+                                // 如果是被永久拒绝就跳转到应用权限系统设置页面
+                                Toast.makeText(getApplicationContext(), "被永久拒绝授权，请手动获取读取短信权限", Toast.LENGTH_LONG).show();
+                                XXPermissions.startPermissionActivity(getApplicationContext(), permissions);
+                            } else {
 //                            ToastUtils.show("获取短信权限失败");
-                            Toast.makeText(getApplicationContext(), "获取短信权限失败", Toast.LENGTH_LONG).show();
+                                Toast.makeText(getApplicationContext(), "获取短信权限失败", Toast.LENGTH_LONG).show();
+                            }
                         }
-                    }
-                });
+                    });
+        }
+        if (hasPermissions1 && hasPermissions2) {
+            startRegisterSMSObserver();
+        }
 //        getSMS();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        //此处可以根据两个Code进行判断，本页面和结果页面跳过来的值
+        if (requestCode == 99) {
+            boolean ignoringBatteryOptimizations = isIgnoringBatteryOptimizations();
+            if (!ignoringBatteryOptimizations) {
+                requestIgnoreBatteryOptimizations();
+            } else {
+                if (isHuawei()) {
+                    goHuaweiSetting();
+                } else if (isXiaomi()) {
+                    goXiaomiSetting();
+                } else if (isOPPO()) {
+                    goOPPOSetting();
+                } else if (isVIVO()) {
+                    goVIVOSetting();
+                } else if (isMeizu()) {
+                    goMeizuSetting();
+                } else if (isSamsung()) {
+                    goSamsungSetting();
+                } else if (isLeTV()) {
+                    goLetvSetting();
+                } else if (isSmartisan()) {
+                    goSmartisanSetting();
+                }
+            }
+        }
+    }
+
+    /**
+     * 跳转到指定应用的首页
+     */
+    private void showActivity(@NonNull String packageName) {
+        Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+        startActivity(intent);
+    }
+
+    /**
+     * 跳转到指定应用的指定页面
+     */
+    private void showActivity(@NonNull String packageName, @NonNull String activityDir) {
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(packageName, activityDir));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+    // 华为厂商
+    public boolean isHuawei() {
+        if (Build.BRAND == null) {
+            return false;
+        } else {
+            return Build.BRAND.toLowerCase().equals("huawei") || Build.BRAND.toLowerCase().equals("honor");
+        }
+    }
+
+    private void goHuaweiSetting() {
+        try {
+            showActivity("com.huawei.systemmanager",
+                    "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity");
+        } catch (Exception e) {
+            showActivity("com.huawei.systemmanager",
+                    "com.huawei.systemmanager.optimize.bootstart.BootStartActivity");
+        }
+    }
+
+    // 小米厂商
+    public static boolean isXiaomi() {
+        return Build.BRAND != null && Build.BRAND.toLowerCase().equals("xiaomi");
+    }
+
+    private void goXiaomiSetting() {
+        showActivity("com.miui.securitycenter",
+                "com.miui.permcenter.autostart.AutoStartManagementActivity");
+    }
+
+    // OPPO厂商
+    public static boolean isOPPO() {
+        return Build.BRAND != null && Build.BRAND.toLowerCase().equals("oppo");
+    }
+
+    private void goOPPOSetting() {
+        try {
+            showActivity("com.coloros.phonemanager");
+        } catch (Exception e1) {
+            try {
+                showActivity("com.oppo.safe");
+            } catch (Exception e2) {
+                try {
+                    showActivity("com.coloros.oppoguardelf");
+                } catch (Exception e3) {
+                    showActivity("com.coloros.safecenter");
+                }
+            }
+        }
+    }
+
+    // VIVO厂商
+    public static boolean isVIVO() {
+        return Build.BRAND != null && Build.BRAND.toLowerCase().equals("vivo");
+    }
+
+    private void goVIVOSetting() {
+        showActivity("com.iqoo.secure");
+    }
+
+    // 魅族厂商
+    public static boolean isMeizu() {
+        return Build.BRAND != null && Build.BRAND.toLowerCase().equals("meizu");
+    }
+
+    private void goMeizuSetting() {
+        showActivity("com.meizu.safe");
+    }
+
+    // 三星厂商
+    public static boolean isSamsung() {
+        return Build.BRAND != null && Build.BRAND.toLowerCase().equals("samsung");
+    }
+
+    private void goSamsungSetting() {
+        try {
+            showActivity("com.samsung.android.sm_cn");
+        } catch (Exception e) {
+            showActivity("com.samsung.android.sm");
+        }
+    }
+
+    // 乐视厂商
+    public static boolean isLeTV() {
+        return Build.BRAND != null && Build.BRAND.toLowerCase().equals("letv");
+    }
+
+    private void goLetvSetting() {
+        showActivity("com.letv.android.letvsafe",
+                "com.letv.android.letvsafe.AutobootManageActivity");
+    }
+
+    // 锤子厂商
+    public static boolean isSmartisan() {
+        return Build.BRAND != null && Build.BRAND.toLowerCase().equals("smartisan");
+    }
+
+    private void goSmartisanSetting() {
+        showActivity("com.smartisanos.security");
     }
 
     public void getSMS() {
@@ -224,7 +398,9 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
         new Thread(new Runnable() {
             @Override
             public void run() {
+                Looper.prepare();//增加部分
                 sendJsonPost(jsonObject.toString());
+                Looper.loop();
             }
         }).start();
     }
@@ -275,7 +451,9 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        smsObserver.unregisterSMSObserver();
+        if (smsObserver != null) {
+            smsObserver.unregisterSMSObserver();
+        }
     }
 
 
