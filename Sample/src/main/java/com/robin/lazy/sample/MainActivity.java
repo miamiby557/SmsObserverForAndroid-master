@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
     private static String CONTAIN_TEXT = "CONTAIN_TEXT";
     private static String PHONE_TEXT = "PHONE_TEXT";
     private static String SERVER_TEXT = "SERVER_TEXT";
-    private static String apiUrl = "http://193.112.1.68:8091/sms/uploadCode/";
+    private static String apiUrl = "http://193.112.1.68:8091/sms/uploadCode";
     private SmsObserver smsObserver;
     private Button confirmPref;
     private EditText containTextPref;
@@ -146,6 +146,8 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
                 .permission(Permission.Group.STORAGE)
                 // 申请通知栏权限
                 .permission(Permission.NOTIFICATION_SERVICE)
+                .permission(Permission.READ_EXTERNAL_STORAGE)
+                .permission(Permission.WRITE_EXTERNAL_STORAGE)
                 // 读取电话状态
                 .permission(Permission.READ_PHONE_STATE)
                 .request(new OnPermissionCallback() {
@@ -153,20 +155,24 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
                     @Override
                     public void onGranted(List<String> permissions, boolean all) {
                         if (all) {
-                            ToastUtils.show("获取读取短信权限成功");
+//                            ToastUtils.show("获取读取短信权限成功");
+                            Toast.makeText(getApplicationContext(), "获取读取短信权限成功", Toast.LENGTH_LONG).show();
                         } else {
-                            ToastUtils.show("获取部分权限成功，但部分权限未正常授予");
+//                            ToastUtils.show("获取部分权限成功，但部分权限未正常授予");
+                            Toast.makeText(getApplicationContext(), "获取部分权限成功，但部分权限未正常授予", Toast.LENGTH_LONG).show();
                         }
                     }
 
                     @Override
                     public void onDenied(List<String> permissions, boolean never) {
                         if (never) {
-                            ToastUtils.show("被永久拒绝授权，请手动获取读取短信权限");
+//                            ToastUtils.show("被永久拒绝授权，请手动获取读取短信权限");
                             // 如果是被永久拒绝就跳转到应用权限系统设置页面
+                            Toast.makeText(getApplicationContext(), "被永久拒绝授权，请手动获取读取短信权限", Toast.LENGTH_LONG).show();
                             XXPermissions.startPermissionActivity(getApplicationContext(), permissions);
                         } else {
-                            ToastUtils.show("获取短信权限失败");
+//                            ToastUtils.show("获取短信权限失败");
+                            Toast.makeText(getApplicationContext(), "获取短信权限失败", Toast.LENGTH_LONG).show();
                         }
                     }
                 });
