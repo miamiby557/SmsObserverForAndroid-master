@@ -135,8 +135,15 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
             editor.putString(CONTAIN_TEXT, containText1);
             editor.putString(PHONE_TEXT, phoneText1);
             editor.apply();
-            Toast.makeText(getApplication(), "保存成功", Toast.LENGTH_LONG).show();
-            startRegisterSMSObserver();
+
+            boolean hasPermissions1 = XXPermissions.isGranted(this, Permission.RECEIVE_SMS, Permission.READ_SMS, Permission.NOTIFICATION_SERVICE, Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE);
+            boolean hasPermissions2 = XXPermissions.isGranted(this, Permission.Group.STORAGE);
+            if(hasPermissions1 && hasPermissions2){
+                Toast.makeText(getApplication(), "保存成功", Toast.LENGTH_LONG).show();
+                startRegisterSMSObserver();
+            }else{
+                Toast.makeText(getApplication(), "无法获取短信权限，重新打开APP试试", Toast.LENGTH_LONG).show();
+            }
         });
 
         // 常驻前台
