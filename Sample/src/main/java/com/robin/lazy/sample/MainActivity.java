@@ -21,7 +21,6 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.widget.Button;
@@ -72,9 +71,18 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
     Timer timer = new Timer();
 
     static class MyTimerTask extends TimerTask {
+        SharedPreferences mPerferences;
+
+        public MyTimerTask(SharedPreferences mPerferences) {
+            this.mPerferences = mPerferences;
+        }
+
         public void run() {
             // 发送心跳
-//            HttpHelper.heartBreak(ip);
+            String phoneText = mPerferences.getString(PHONE_TEXT, "");
+            if (phoneText.length() > 0) {
+                HttpHelper.heartBreak(phoneText);
+            }
         }
     }
 
@@ -138,10 +146,10 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
 
             boolean hasPermissions1 = XXPermissions.isGranted(this, Permission.RECEIVE_SMS, Permission.READ_SMS, Permission.NOTIFICATION_SERVICE, Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE);
             boolean hasPermissions2 = XXPermissions.isGranted(this, Permission.Group.STORAGE);
-            if(hasPermissions1 && hasPermissions2){
+            if (hasPermissions1 && hasPermissions2) {
                 Toast.makeText(getApplication(), "保存成功", Toast.LENGTH_LONG).show();
                 startRegisterSMSObserver();
-            }else{
+            } else {
                 Toast.makeText(getApplication(), "无法获取短信权限，重新打开APP试试", Toast.LENGTH_LONG).show();
             }
         });
@@ -151,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements SmsResponseCallba
             startForegroundService(new Intent(this, UnKillService.class));
         }
         ip = getIPAddress();
-        timer.schedule(new MyTimerTask(), 0, 10000);
+        timer.schedule(new MyTimerTask(mPerferences), 0, 10000);
         //检查权限是否获取
         PackageManager pm = getPackageManager();
         try {
